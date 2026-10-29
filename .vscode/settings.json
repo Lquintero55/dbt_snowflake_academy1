@@ -1,0 +1,9 @@
+{
+    "editor.tabSize": 2,
+    "editor.fontSize": 7,
+    "editor.accessibilityPageSize": 1000,
+    "editor.scrollbar.horizontalScrollbarSize": 6,
+    "editor.scrollbar.verticalScrollbarSize": 7,
+    "editor.minimap.size": "fit",
+    "workbench.sash.size": 2
+}
