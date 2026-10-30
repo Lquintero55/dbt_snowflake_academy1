@@ -1,31 +1,30 @@
 with 
     source_data as(
         select * 
-        from {{source('raw_data', 'customers') }} c
+        from {{ source ( 'raw_data',  'customers') }}
     ),
-    cleaned_data as (
-       SELECT 
-            c.customer_id,
-            UPPER(TRIM(c.first_name)) AS first_name,
-            UPPER(TRIM(c.last_name)) AS last_name,
-            LOWER(TRIM(c.email)) AS email,
-            COALESCE(c.phone, 'N/A') AS phone,
-            c.created_at,
-            CASE
-                    WHEN c.country IS NULL OR c.country = '' then 'UKNOWN'
-                    WHEN c.country IN ('US', 'USA', 'united states') THEN 'US'
-                    WHEN c.country IN ('UK', 'GB', 'United Kingdom', 'united kingdom', 'Great Britain') THEN 'UK'
-                    WHEN c.country IN ('CA', 'Canada', 'canada') THEN 'CA'
-                    WHEN c.country IN ('DE', 'Germany', 'germany') THEN 'DE'
-                    WHEN c.country IN ('FR', 'France', 'france') THEN 'FR'
-                    ELSE upper(c.country)
-                END AS country_standarized,
 
-        FROM 
-            source_data c
-        WHERE c.created_at IS NOT NULL
-            AND c.email IS NOT NULL
-            AND c.email LIKE '%@%'
-        qualify ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(c.email)) ORDER BY c.created_at DESC) = 1
+    country_map as (
+        select * from {{ ref('country_mapping') }}
+    ),
+
+    cleaned  as (
+       SELECT 
+           customer_id::integer as customer_id,
+           TRIM(UPPER(first_name)) AS  first_name,
+           TRIM(UPPER(last_name)) AS  last_name,
+           TRIM(LOWER(email)) AS email,
+           COALESCE(TRIM(phone, 'N/A')) AS phone_number,
+           trim(upper(country)) as country_code,
+           coalesce(cm.country_code, trim(upper(s.country))) as country_standarized,
+           created_at::timestamp_ntz as created_at
+        FROM  source_data 
+        LEFT JOIN country_map cm
+            on trim(upper(s.country)) = upper(cm.country_raw)
+        WHERE created_at IS NOT NULL
+            AND email IS NOT NULL
+            AND email LIKE '%@%'
+        qualify ROW_NUMBER() OVER (PARTITION BY trim(lower(email)) ORDER BY created_at DESC) = 1
     )
-select * from cleanded_data
+
+select * from cleanded

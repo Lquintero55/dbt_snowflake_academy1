@@ -1,6 +1,6 @@
 version: 2
 
-source:
+sources:
   - name: raw_data
     database: raw
     schema: public
